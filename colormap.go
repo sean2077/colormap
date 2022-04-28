@@ -1,26 +1,15 @@
-# colormap
+package colormap
 
-Golang colormap (key: color name, value: color.RGBA).
+import (
+	"image/color"
+	"strconv"
+	"strings"
+)
 
-## Usage
-
-```golang
-import "github.com/zhangxianbing/colormap"
-
-red := colormap.RGB("red") // {255 0 0 255}
-red2 := colormap.RGBA("red", 80) // {255 0 0 80}
-```
-
-## Color Map
-
-Source: <https://www.rapidtables.com/web/color/RGB_Color.html>
-
-It is recommended to install the vscode plugin [Color Highlight](https://marketplace.visualstudio.com/items?itemName=naumovs.color-highlight) to view the following colors more intuitively.:
-
-![colormap](assets/colormap.png)
-
-| Hex Code#RRGGBB | Decimal CodeR,G,B |         en_name          | zh_name       |
-| :-------------: | :---------------: | :----------------------: | ------------- |
+// It is recommended to install the vscode plugin Color Highlight to view the following colors more intuitively.
+// Source: <https://www.rapidtables.com/web/color/RGB_Color.html>
+// | Hex Code#RRGGBB | Decimal CodeR,G,B |         en_name          | zh_name       |
+const colorMapText = `
 |     #FF0000     |     (255,0,0)     |           red            | 红色          |
 |     #FFA500     |    (255,165,0)    |          orange          | 橙色          |
 |     #FFFF00     |    (255,255,0)    |          yellow          | 黄色          |
@@ -39,6 +28,8 @@ It is recommended to install the vscode plugin [Color Highlight](https://marketp
 |     #003399     |    (0,51,153)     |       powder blue        | 粉末蓝        |
 |     #E32636     |    (227,38,54)    |     alizarin crimson     | 深茜红        |
 |     #2A52BE     |    (42,82,190)    |      cerulean blue       | 天青蓝        |
+|     #0047AB     |    (0,71,171)     |       cobalt blue        | 钴蓝色        |
+|     #002FA7     |    (0,47,167)     | international klein_blue | 国际奇连蓝    |
 |     #000080     |     (0,0,128)     |        navy blue         | 海军蓝        |
 |     #5E86C1     |   (94,134,193)    |        pale denim        | 白牛仔布色    |
 |     #CCCCFF     |   (204,204,255)   |        periwinkle        | 长春花色      |
@@ -87,8 +78,6 @@ It is recommended to install the vscode plugin [Color Highlight](https://marketp
 |     #00008B     |     (0,0,139)     |        dark blue         | 深蓝          |
 |     #0000CD     |     (0,0,205)     |       medium blue        | 中蓝色        |
 |     #4169E1     |   (65,105,225)    |        royal blue        | 宝蓝色        |
-|     #0047AB     |    (0,71,171)     |       cobalt blue        | 钴蓝色        |
-|     #002FA7     |    (0,47,167)     | international klein_blue | 国际奇连蓝    |
 |     #8A2BE2     |   (138,43,226)    |       blue violet        | 蓝紫色        |
 |     #4B0082     |    (75,0,130)     |          indigo          | 靛青          |
 |     #483D8B     |    (72,61,139)    |     dark slate blue      | 深石板蓝      |
@@ -153,3 +142,51 @@ It is recommended to install the vscode plugin [Color Highlight](https://marketp
 |     #F5F5F5     |   (245,245,245)   |       white smoke        | 白色烟        |
 |     #FFFFFF     |   (255,255,255)   |          white           | 白色          |
 |     #000000     |      (0,0,0)      |          black           | 黑色          |
+`
+
+var colorMap map[string]color.RGBA
+
+func getColorMap() map[string]color.RGBA {
+	if colorMap == nil {
+		colorMap = make(map[string]color.RGBA)
+		for _, line := range strings.Split(strings.TrimSpace(colorMapText), "\n") {
+			cols := strings.Split(line, "|")
+			rbgText := strings.TrimSpace(cols[2])
+			rgb := strings.Split(rbgText[1:len(rbgText)-1], ",")
+			r, _ := strconv.ParseInt(rgb[0], 10, 16)
+			g, _ := strconv.ParseInt(rgb[1], 10, 16)
+			b, _ := strconv.ParseInt(rgb[2], 10, 16)
+			c := color.RGBA{R: uint8(r), G: uint8(g), B: uint8(b), A: 0xff}
+			enNamesText := strings.TrimSpace(cols[3])
+			for _, name := range strings.Split(enNamesText, "/") {
+				colorMap[name] = c
+			}
+			zhNamesText := strings.TrimSpace(cols[4])
+			for _, name := range strings.Split(zhNamesText, "/") {
+				colorMap[name] = c
+			}
+		}
+	}
+	return colorMap
+}
+
+// Map returns color map.
+func Map() map[string]color.RGBA {
+	return getColorMap()
+}
+
+// RGB returns color.RGBA named name.
+func RGB(name string) color.RGBA {
+	m := getColorMap()
+	if _, ok := m[name]; !ok {
+		return color.RGBA{}
+	}
+	return m[name]
+}
+
+// RGBA return color.RGBA named name with alpha.
+func RGBA(name string, alpha uint8) color.RGBA {
+	c := RGB(name)
+	r, g, b, _ := c.RGBA()
+	return color.RGBA{R: uint8(r), G: uint8(g), B: uint8(b), A: alpha}
+}
